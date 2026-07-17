@@ -13,4 +13,14 @@
 		<HintPath>lib\PowerService.dll</HintPath>
 	</Reference>
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Application\Configuration\" />
+    <Folder Include="Application\Services\" />
+    <Folder Include="Domain\Interfaces\" />
+    <Folder Include="Infrastructure\Data\" />
+    <Folder Include="Infrastructure\Time\" />
+    <Folder Include="Infrastructure\Services\" />
+    <Folder Include="Reports\" />
+  </ItemGroup>
 </Project>
