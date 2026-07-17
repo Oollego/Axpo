@@ -15,10 +15,7 @@ namespace Axso.Infrastructure.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ILogger<CsvReportWriter> _logger;
 
-        public CsvReportWriter(
-            IOptions<ReportOptions> options,
-            IDateTimeProvider dateTimeProvider,
-            ILogger<CsvReportWriter> logger)
+        public CsvReportWriter(IOptions<ReportOptions> options, IDateTimeProvider dateTimeProvider, ILogger<CsvReportWriter> logger)
         {
             _options = options.Value;
             _dateTimeProvider = dateTimeProvider;

@@ -1,9 +1,6 @@
 ﻿using Axpo;
 using Axso.Domain.Interfaces;
 using Axso.Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Axso.Infrastructure.Data
 {
