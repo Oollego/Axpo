@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Axso.Domain.Models;
 
 namespace Axso.Domain.Interfaces
 {
-    internal interface ITradeRepository
+    public interface ITradeRepository
     {
+        Task<IReadOnlyList<Trade>> GetTradesAsync(DateTime date, CancellationToken ct = default);
     }
 }
