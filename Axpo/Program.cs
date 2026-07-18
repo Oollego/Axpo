@@ -6,6 +6,14 @@ namespace Axpo
         {
             var builder = Host.CreateApplicationBuilder(args);
 
+            var switchMappings = new Dictionary<string, string>
+            {
+                ["--interval"] = "ReportOptions:IntervalMinutes",
+                ["--output"] = "ReportOptions:OutputFolder"
+            };
+
+            builder.Configuration.AddCommandLine(args, switchMappings);
+
             builder.Services
                 .AddApp()
                 .AddHostedService<ReportWorker>();
