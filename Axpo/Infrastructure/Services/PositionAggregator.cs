@@ -5,6 +5,8 @@ namespace Axpo.Infrastructure.Services
 {
     public class PositionAggregator : IPositionAggregator
     {
+        private static readonly TimeZoneInfo LondonZone = GetLondonTimeZone();
+
         public IReadOnlyList<HourlyPosition> Aggregate(IReadOnlyList<Trade> trades, CancellationToken ct = default)
         {
             if (trades.Count == 0)
@@ -14,7 +16,8 @@ namespace Axpo.Infrastructure.Services
 
             var date = trades[0].Date;
 
-            var startLocalTime = new DateTime(date.Year, date.Month, date.Day, 23, 0, 0).AddDays(-1);
+            var startLocal = new DateTime(date.Year, date.Month, date.Day, 23, 0, 0, DateTimeKind.Unspecified).AddDays(-1);
+            var startUtc = TimeZoneInfo.ConvertTimeToUtc(startLocal, LondonZone);
 
             var volumesByPeriod = new SortedDictionary<int, double>();
 
@@ -40,11 +43,24 @@ namespace Axpo.Infrastructure.Services
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    var localTime = startLocalTime.AddHours(kvp.Key - 1);
+                    var periodUtc = startUtc.AddHours(kvp.Key - 1);
+                    var localTime = TimeZoneInfo.ConvertTimeFromUtc(periodUtc, LondonZone);
 
                     return new HourlyPosition(localTime.Hour, kvp.Value);
                 })
                 .ToList();
+        }
+
+        private static TimeZoneInfo GetLondonTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
+            }
         }
     }
 }

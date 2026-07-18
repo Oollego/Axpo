@@ -4,6 +4,7 @@ using Axpo.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 
 
+
 namespace Axpo.Tests
 {
     public class PositionAggregatorTests
@@ -29,39 +30,24 @@ namespace Axpo.Tests
         [Fact]
         public async Task Aggregate_ShouldReturn23Rows_ForSpringDst()
         {
-            // Arrange
             var trades = await GetTradesAsync(new DateTime(2026, 3, 29));
-
-            // Act
             var result = _aggregator.Aggregate(trades);
-
-            // Assert
             Assert.Equal(23, result.Count);
         }
 
         [Fact]
         public async Task Aggregate_ShouldReturn24Rows_ForNormalDay()
         {
-            // Arrange
             var trades = await GetTradesAsync(new DateTime(2026, 7, 15));
-
-            // Act
             var result = _aggregator.Aggregate(trades);
-
-            // Assert
             Assert.Equal(24, result.Count);
         }
 
         [Fact]
         public async Task Aggregate_ShouldReturn25Rows_ForAutumnDst()
         {
-            // Arrange
             var trades = await GetTradesAsync(new DateTime(2026, 10, 25));
-
-            // Act
             var result = _aggregator.Aggregate(trades);
-
-            // Assert
             Assert.Equal(25, result.Count);
         }
 
@@ -74,22 +60,14 @@ namespace Axpo.Tests
             int month,
             int day)
         {
-            // Arrange
             var trades = await GetTradesAsync(new DateTime(year, month, day));
-
-            // Act
             var result = _aggregator.Aggregate(trades);
-
-            // Assert
-            Assert.Equal(
-                trades.First().Periods.Count,
-                result.Count);
+            Assert.Equal(trades.First().Periods.Count, result.Count);
         }
 
         [Fact]
         public async Task Aggregate_ShouldAggregateVolumes_ForEachPeriod()
         {
-            // Arrange
             var trades = await GetTradesAsync(new DateTime(2026, 7, 15));
 
             var expectedVolumes = trades
@@ -99,20 +77,50 @@ namespace Axpo.Tests
                 .Select(g => g.Sum(x => x.Volume))
                 .ToArray();
 
-            // Act
             var result = _aggregator.Aggregate(trades);
 
             var actualVolumes = result
                 .Select(x => x.Volume)
                 .ToArray();
 
-            // Assert
             Assert.Equal(expectedVolumes.Length, actualVolumes.Length);
 
             for (int i = 0; i < expectedVolumes.Length; i++)
             {
                 Assert.Equal(expectedVolumes[i], actualVolumes[i], 10);
             }
+        }
+
+        [Fact]
+        public async Task Aggregate_ShouldSkipHour1_ForSpringDst()
+        {
+            var trades = await GetTradesAsync(new DateTime(2026, 3, 29));
+            var result = _aggregator.Aggregate(trades);
+            Assert.DoesNotContain(result, x => x.Hour == 1);
+        }
+
+        [Fact]
+        public async Task Aggregate_ShouldContainTwoHour1_ForAutumnDst()
+        {
+            var trades = await GetTradesAsync(new DateTime(2026, 10, 25));
+            var result = _aggregator.Aggregate(trades);
+            Assert.Equal(2, result.Count(x => x.Hour == 1));
+        }
+
+        [Fact]
+        public async Task Aggregate_ShouldStartAt23_ForNormalDay()
+        {
+            var trades = await GetTradesAsync(new DateTime(2026, 7, 15));
+            var result = _aggregator.Aggregate(trades);
+            Assert.Equal(23, result.First().Hour);
+            Assert.Equal(22, result.Last().Hour);
+        }
+
+        [Fact]
+        public void Aggregate_ShouldReturnEmpty_WhenTradesAreEmpty()
+        {
+            var result = _aggregator.Aggregate(Array.Empty<Trade>());
+            Assert.Empty(result);
         }
     }
 }
