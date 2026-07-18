@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Axpo.Tests/Axpo.Tests.csproj" />
+  <Project Path="Axpo/Axpo.csproj" />
+</Solution>

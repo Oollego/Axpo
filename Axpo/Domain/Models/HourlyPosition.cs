@@ -1,0 +1,16 @@
+﻿
+namespace Axpo.Domain.Models
+{
+    public class HourlyPosition
+    {
+        public int Hour { get; }
+
+        public double Volume { get; }
+
+        public HourlyPosition(int hour, double volume)
+        {
+            Hour = hour;
+            Volume = volume;
+        }
+    }
+}
