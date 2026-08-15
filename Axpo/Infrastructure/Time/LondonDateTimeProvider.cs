@@ -11,22 +11,11 @@ namespace Axpo.Infrastructure.Time
 
         public LondonDateTimeProvider()
         {
-            _londonZone = GetLondonTimeZone();
+            _londonZone = TimeZoneHelper.GetLondonTimeZone();
         }
 
         public DateTime Now =>
             TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _londonZone);
 
-        private static TimeZoneInfo GetLondonTimeZone()
-        {
-            try
-            {
-                return TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                return TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
-            }
-        }
     }
 }

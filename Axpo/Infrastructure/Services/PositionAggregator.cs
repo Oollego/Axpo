@@ -1,11 +1,12 @@
 ﻿using Axpo.Domain.Interfaces;
 using Axpo.Domain.Models;
+using Axpo.Infrastructure.Time;
 
 namespace Axpo.Infrastructure.Services
 {
     public class PositionAggregator : IPositionAggregator
     {
-        private static readonly TimeZoneInfo LondonZone = GetLondonTimeZone();
+        private static readonly TimeZoneInfo LondonZone = TimeZoneHelper.GetLondonTimeZone();
 
         public IReadOnlyList<HourlyPosition> Aggregate(IReadOnlyList<Trade> trades, CancellationToken ct = default)
         {
@@ -49,18 +50,6 @@ namespace Axpo.Infrastructure.Services
                     return new HourlyPosition(localTime.Hour, kvp.Value);
                 })
                 .ToList();
-        }
-
-        private static TimeZoneInfo GetLondonTimeZone()
-        {
-            try
-            {
-                return TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                return TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
-            }
         }
     }
 }
