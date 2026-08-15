@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-Axso-148174c2-7a62-422c-8d02-0479938daccd</UserSecretsId>
+    <UserSecretsId>dotnet-Axpo-148174c2-7a62-422c-8d02-0479938daccd</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Reports\" />
 	<Reference Include="PowerService">
 		<HintPath>lib\PowerService.dll</HintPath>
 	</Reference>

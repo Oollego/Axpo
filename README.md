@@ -59,13 +59,13 @@ Period-to-hour conversion uses UTC arithmetic: the trading day start time is con
 
 ### Retry policy
 
-Calls to `PowerService` are retried up to three times before the exception is propagated.
+Calls to `PowerService` are attempted up to three times (the initial call plus two retries, with a short delay between them) before the exception is propagated.
 
 ### Concurrent executions
 
-Only one report can run at a time.
+The scheduling loop is sequential: each extract is awaited before the next tick is processed, so runs never overlap.
 
-If a scheduled execution starts while the previous one is still running, the new execution is skipped and a warning is written to the log.
+The semaphore in the worker is a defensive guard — should the scheduling ever be changed to fire-and-forget, an overlapping run would be skipped and a warning written to the log instead of running concurrently.
 
 ### Domain isolation
 
@@ -79,7 +79,10 @@ External SDK models are mapped to internal domain models inside the repository, 
 
 - .NET 10 SDK
 - `PowerService.dll` (included in `Axpo/lib/`)
-- Environment variable `SERVICE_MODE=Debug` — required to prevent `PowerServiceException` from the SDK's internal validation
+
+No environment variables are required to run the application. The provided
+`PowerService` occasionally throws `PowerServiceException` at random to simulate a
+flaky trading system; this is handled by the retry policy (see below).
 
 ### Restore
 
@@ -166,19 +169,36 @@ Axpo
 
 ## Testing
 
-The project contains integration tests that use the real `PowerService.dll` to verify aggregation logic:
+The project contains both unit tests (deterministic, in-memory, no SDK) and
+integration tests that use the real `PowerService.dll`.
+
+Aggregation — unit tests with hand-built trades:
 
 | Test | Verifies |
 |------|----------|
-| `ShouldReturn23Rows_ForSpringDst` | 23 rows during spring-forward |
-| `ShouldReturn24Rows_ForNormalDay` | 24 rows on a normal day |
-| `ShouldReturn25Rows_ForAutumnDst` | 25 rows during fall-back |
-| `ShouldReturnSameNumberOfRows_AsPowerServicePeriods` | Row count matches period count |
-| `ShouldAggregateVolumes_ForEachPeriod` | Volumes summed correctly across trades |
-| `ShouldSkipHour1_ForSpringDst` | Hour 01:00 is absent (skipped by DST) |
-| `ShouldContainTwoHour1_ForAutumnDst` | Hour 01:00 appears twice (repeated by DST) |
-| `ShouldStartAt23_ForNormalDay` | First row is 23:00, last is 22:00 |
-| `ShouldReturnEmpty_WhenTradesAreEmpty` | Empty input produces empty output |
+| `Aggregate_MatchesChallengeExample` | The exact example from the spec (150 / 80) |
+| `Aggregate_ShouldSumVolumesAcrossTrades_ForKnownInput` | Volumes summed correctly across trades, against hardcoded values |
+| `Aggregate_ShouldReturnEmpty_WhenTradesAreEmpty` | Empty input produces empty output |
+
+Aggregation — integration tests over the real `PowerService.dll`:
+
+| Test | Verifies |
+|------|----------|
+| `Aggregate_ShouldReturn23Rows_ForSpringDst` | 23 rows during spring-forward |
+| `Aggregate_ShouldReturn24Rows_ForNormalDay` | 24 rows on a normal day |
+| `Aggregate_ShouldReturn25Rows_ForAutumnDst` | 25 rows during fall-back |
+| `Aggregate_ShouldReturnSameNumberOfRows_AsPowerServicePeriods` | Row count matches period count |
+| `Aggregate_ShouldSkipHour1_ForSpringDst` | Hour 01:00 is absent (skipped by DST) |
+| `Aggregate_ShouldContainTwoHour1_ForAutumnDst` | Hour 01:00 appears twice (repeated by DST) |
+| `Aggregate_ShouldStartAt23_ForNormalDay` | First row is 23:00, last is 22:00 |
+
+CSV output — unit tests (requirements 3 and 4):
+
+| Test | Verifies |
+|------|----------|
+| `Writes_Header_HhMmFormat_And_LeadingZeroHour` | Header row and `HH:MM` format with a leading zero (`01:00`) |
+| `FileName_UsesLocalExtractTime_InRequiredPattern` | `PowerPosition_yyyyMMdd_HHmm.csv` from the local extract time |
+| `Volume_UsesDotDecimal_EvenUnderCommaCulture` | Volume uses `.` as decimal separator regardless of machine culture |
 
 Run all tests:
 

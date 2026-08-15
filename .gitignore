@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Generated power-position report output
+[Rr]eports/
+PowerPosition_*.csv
+
+# Coding-challenge task description (not part of the solution)
+READMETask.md

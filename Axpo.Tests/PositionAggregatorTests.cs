@@ -27,6 +27,41 @@ namespace Axpo.Tests
             return await repository.GetTradesAsync(date);
         }
 
+        // Deterministic in-memory trade (no SDK): index 0 = period 1.
+        private static Trade InMemoryTrade(DateTime date, params double[] volumesByPeriod)
+        {
+            var periods = volumesByPeriod
+                .Select((volume, index) => new TradePeriod(index + 1, volume))
+                .ToList();
+
+            return new Trade(date, periods);
+        }
+
+        [Fact]
+        public void Aggregate_MatchesChallengeExample()
+        {
+            var date = new DateTime(2015, 1, 4);
+
+            var trade1 = InMemoryTrade(date, Enumerable.Repeat(100.0, 24).ToArray());
+
+            // Trade 2 from the spec: periods 1-11 = 50, periods 12-24 = -20.
+            var trade2 = InMemoryTrade(date, Enumerable.Range(1, 24)
+                .Select(p => p <= 11 ? 50.0 : -20.0)
+                .ToArray());
+
+            var result = _aggregator.Aggregate(new[] { trade1, trade2 });
+
+            var expectedHours = new[] { 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 };
+            var expectedVolumes = Enumerable.Range(1, 24).Select(p => p <= 11 ? 150.0 : 80.0).ToArray();
+
+            Assert.Equal(24, result.Count);
+            for (int i = 0; i < 24; i++)
+            {
+                Assert.Equal(expectedHours[i], result[i].Hour);
+                Assert.Equal(expectedVolumes[i], result[i].Volume);
+            }
+        }
+
         [Fact]
         public async Task Aggregate_ShouldReturn23Rows_ForSpringDst()
         {
@@ -66,29 +101,25 @@ namespace Axpo.Tests
         }
 
         [Fact]
-        public async Task Aggregate_ShouldAggregateVolumes_ForEachPeriod()
+        public void Aggregate_ShouldSumVolumesAcrossTrades_ForKnownInput()
         {
-            var trades = await GetTradesAsync(new DateTime(2026, 7, 15));
+            // Expected sums are hardcoded, not re-derived with the same GroupBy().Sum()
+            // the aggregator uses, so a wrong sum actually fails the test.
+            var date = new DateTime(2026, 7, 15);
 
-            var expectedVolumes = trades
-                .SelectMany(t => t.Periods)
-                .GroupBy(p => p.Period)
-                .OrderBy(g => g.Key)
-                .Select(g => g.Sum(x => x.Volume))
-                .ToArray();
+            var trades = new[]
+            {
+                InMemoryTrade(date, 10, 20, 30),
+                InMemoryTrade(date, 1, 2, 3),
+                InMemoryTrade(date, -5, 0, 100),
+            };
 
             var result = _aggregator.Aggregate(trades);
 
-            var actualVolumes = result
-                .Select(x => x.Volume)
-                .ToArray();
-
-            Assert.Equal(expectedVolumes.Length, actualVolumes.Length);
-
-            for (int i = 0; i < expectedVolumes.Length; i++)
-            {
-                Assert.Equal(expectedVolumes[i], actualVolumes[i], 10);
-            }
+            Assert.Equal(3, result.Count);
+            Assert.Equal(6, result[0].Volume);    // 10 + 1 - 5
+            Assert.Equal(22, result[1].Volume);   // 20 + 2 + 0
+            Assert.Equal(133, result[2].Volume);  // 30 + 3 + 100
         }
 
         [Fact]
